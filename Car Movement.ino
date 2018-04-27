@@ -6,6 +6,7 @@ const int leftForward = 5;
 const int leftBackward = 6;
 const int rightForward = 9;
 const int rightBackward = 10;
+
 const float carRadius = 6.5;
 const float wheelRadius = 3;
 
@@ -53,7 +54,7 @@ void ReadUltrasonic() {
   distance= duration*0.034/2; // Calculating the distance
 }
 
-void readLeftRotary()
+void ReadLeftRotary()
 {
       prevStateLeft=currentStateLeft;
     currentStateLeft=digitalRead(RotaryLeft);
@@ -61,7 +62,7 @@ void readLeftRotary()
      angleLeft=(angleLeft+9)%360;
 }
 
-void readRightRotary()
+void ReadRightRotary()
 {
       prevStateRight=currentStateRight;
   currentStateRight=digitalRead(RotaryRight);
@@ -69,70 +70,147 @@ void readRightRotary()
      angleRight=(angleRight+9)%360;
 }
 
-void RunForward()
+void RunForward(float distance)
 {
-/*
-  if (angleLeft<=angleRight)
-     analogWrite(leftForward,carSpeed);
-  else
-     analogWrite(leftForward,0);
-  analogWrite(leftBackward,0);
- if (angleRight<=angleLeft) 
-     analogWrite(rightForward,carSpeed);
-  else 
-     analogWrite(rightForward,0);
-  analogWrite(rightBackward,0);
-*/
-  if (angleRight == angleLeft)
+  angleRight=0;
+  angleLeft=0;
+  float degree=distance/carRadius;
+  while (angleRight <= degree || angleLeft <= degree )
   {
-     analogWrite(leftForward,carSpeed);
-     analogWrite(rightForward,carSpeed);  
+      if (angleRight == angleLeft)
+      {
+         analogWrite(leftForward,carSpeed);
+         analogWrite(rightForward,carSpeed);  
+      }
+      else if (angleRight>angleLeft)
+      { 
+         analogWrite(leftForward,carSpeed);
+         analogWrite(rightForward,0);  
+      }
+      else if (angleLeft>angleRight)
+      {
+         analogWrite(leftForward,0);
+         analogWrite(rightForward,carSpeed);  
+      }
+        
+      analogWrite(rightBackward,0);
+      analogWrite(leftBackward,0);
+        /*
+       Serial.println(angleRight);
+       Serial.println(angleLeft);
+       */
+    //Angles for both motors
+    //for Left Motor
+     ReadLeftRotary();
+    //for Right Motor
+    ReadRightRotary();
   }
-  else if (angleRight>angleLeft)
-  { 
-     analogWrite(leftForward,carSpeed);
-     analogWrite(rightForward,0);  
-  }
-  else if (angleLeft>angleRight)
-  {
-     analogWrite(leftForward,0);
-     analogWrite(rightForward,carSpeed);  
-  }
-    
-  analogWrite(rightBackward,0);
-  analogWrite(leftBackward,0);
-    /*
-   Serial.println(angleRight);
-   Serial.println(angleLeft);
-   */
 }
 
-void RunBackward()
+void RunBackward(float distance)
 {
-  if (angleRight == angleLeft)
+  angleRight=0;
+  angleLeft=0;
+  float degree=distance/carRadius;
+  while (angleRight <= degree || angleLeft <= degree )
+  {
+    if (angleRight == angleLeft)
+      {
+         analogWrite(leftBackward,carSpeed);
+         analogWrite(rightBackward,carSpeed);  
+      }
+      else if (angleRight>angleLeft)
+      { 
+         analogWrite(leftBackward,carSpeed);
+         analogWrite(rightBackward,0);  
+      }
+      else if (angleLeft>angleRight)
+      {
+         analogWrite(leftBackward,0);
+         analogWrite(rightBackward,carSpeed);  
+      }
+        
+      analogWrite(rightForward,0);
+      analogWrite(leftForward,0);
+
+      
+    //Angles for both motors
+    //for Left Motor
+     ReadLeftRotary();
+    //for Right Motor
+    ReadRightRotary();
+  }
+}
+
+
+void RunRightward(int degree)
+{
+  angleRight=0;
+  angleLeft=0;
+  degree=(carRadius*degree)/wheelRadius;
+  while (angleRight <= degree || angleLeft <= degree )
+  {
+    if (angleRight == angleLeft)
     {
-       analogWrite(leftBackward,carSpeed);
+       analogWrite(leftForward,carSpeed);
        analogWrite(rightBackward,carSpeed);  
     }
     else if (angleRight>angleLeft)
     { 
-       analogWrite(leftBackward,carSpeed);
+       analogWrite(leftForward,carSpeed);
        analogWrite(rightBackward,0);  
     }
     else if (angleLeft>angleRight)
     {
-       analogWrite(leftBackward,0);
+       analogWrite(leftForward,0);
        analogWrite(rightBackward,carSpeed);  
     }
-      
+    
+    analogWrite(leftBackward,0);  
     analogWrite(rightForward,0);
-    analogWrite(leftForward,0);
+
+    //Angles for both motors
+    //for Left Motor
+     ReadLeftRotary();
+    //for Right Motor
+    ReadRightRotary();
+  }
+    
 }
 
-
-void RunLeftward()
+void RunLeftward(int degree)
 {
-  
+  angleRight=0;
+  angleLeft=0;
+  degree=(carRadius*degree)/wheelRadius;
+  while (angleRight <= degree || angleLeft <= degree )
+  {
+    if (angleRight == angleLeft)
+    {
+       analogWrite(leftBackward,carSpeed);
+       analogWrite(rightForward,carSpeed);  
+    }
+    else if (angleRight>angleLeft)
+    { 
+       analogWrite(leftBackward,carSpeed);
+       analogWrite(rightForward,0);  
+    }
+    else if (angleLeft>angleRight)
+    {
+       analogWrite(leftBackward,0);
+       analogWrite(rightForward,carSpeed);  
+    }
+    
+    analogWrite(rightBackward,0);  
+    analogWrite(leftForward,0);
+
+    //Angles for both motors
+    //for Left Motor
+     ReadLeftRotary();
+    //for Right Motor
+    ReadRightRotary();
+  }
+    
 }
 
 void setup() 
@@ -159,16 +237,9 @@ void loop() {
   // put your main code here, to run repeatedly:
   
   //ReadUltrasonic();
+       
+   RunForward(50);
 
-    //Angles for both motors
-    //for Left Motor
-     readLeftRotary();
-    //for Right Motor
-    readRightRotary();
-    
-    
-   RunForward();
-
-   //RunBackward();
+  //RunBackward();
 
 }
