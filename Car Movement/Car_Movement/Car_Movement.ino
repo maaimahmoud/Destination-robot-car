@@ -1,5 +1,5 @@
 //--------------------------------------
-
+#include <PID_v1.h>
 ///////////Car Variables////////////
 
 const int leftForward = 9;
@@ -10,13 +10,13 @@ const int rightBackward = 6;
 const float carRadius = 7.65;
 const float wheelRadius = 3.15;
 
-const int cellSize = 5000;
+const int cellSize = 400;
 
 int carSpeed = 255;
 
 /// Motion Control///
-const float r=3;
-const float R=7.5;
+const float r=3.15;
+const float R=7.65;
 
 float Voltr;
 float Voltl;
@@ -25,7 +25,7 @@ float Vcar;
 float Omegacar = 0;
 
 const float k1 = 1;
-const float k3 = 1;
+const float k3 = 1.5;
 
 const unsigned int deltaTime = 250;
 
@@ -93,8 +93,8 @@ void ControlMotion()
     float Vr=Vrmax;
     float Vl=Vlmax;
 
-    Serial.println(Vrmax);
-    Serial.println(Vlmax);
+    //Serial.println(Vrmax);
+    //Serial.println(Vlmax);
 
     if (Vr > Vl)
       Vcar = Vl;
@@ -103,7 +103,7 @@ void ControlMotion()
 
     Vcar *= r;
 
-    Serial.println(Vcar);
+    //Serial.println(Vcar);
       
     Dr = radians(angleRight) * r;
     Dl = radians(angleLeft) * r;
@@ -125,18 +125,18 @@ void ControlMotion()
     Serial.println(v);
     
     // current position of the car
-    theta = omega * currentTime;
-    x = cos(theta) * v * currentTime;
-    y = sin(theta) * v * currentTime;
+    theta += omega * currentTime;
+    x += cos(theta) * v * currentTime;
+    y += sin(theta) * v * currentTime;
 
     Serial.println(theta);
     Serial.println(x);
     Serial.println(y);
 
     //desired position of the car
-    thetaCar = Omegacar * currentTime;
-    xCar = Vcar * cos(thetaCar) * currentTime;
-    yCar = Vcar * sin(thetaCar) * currentTime;
+    thetaCar += Omegacar * currentTime;
+    xCar += Vcar * cos(thetaCar) * currentTime;
+    yCar += Vcar * sin(thetaCar) * currentTime;
 
     Serial.println(thetaCar);
     Serial.println(xCar);
@@ -177,7 +177,7 @@ void ControlMotion()
     Serial.println(Voltr);
     Serial.println(Voltl);
 
-     delay(3000);
+     
 
      analogWrite(leftForward,Voltl);
      analogWrite(rightForward,Voltr);
@@ -202,8 +202,25 @@ void ControlMotion()
     Vr = radians(angleRight-oldAngleRight)/currentTime;
     Vl = radians(angleLeft-oldAngleLeft)/currentTime;
 
+    if (Vr > Vrmax)
+      Vrmax = Vr;
+
+    if (Vl > Vlmax)
+      Vlmax = Vl;
+
+    float newSpeed;
+    if (Vl < Vr)
+      newSpeed = Vl;
+    else
+      newSpeed = Vr;
+
+    if (newSpeed > Vcar)
+      Vcar = newSpeed;
+
     Serial.println(Vr);
     Serial.println(Vl);
+
+    //delay(3000);
 
     Dr = radians(angleRight) * r;
     Dl = radians(angleLeft ) * r;
