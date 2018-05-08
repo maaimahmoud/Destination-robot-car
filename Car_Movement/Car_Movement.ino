@@ -1,5 +1,5 @@
 //--------------------------------------
-#include <PID_v1.h>
+//#include <PID_v1.h>
 ///////////Car Variables////////////
 
 const int leftForward = 9;
@@ -27,7 +27,7 @@ float Omegacar = 0;
 const float k1 = 1;
 const float k3 = 1.5;
 
-const unsigned int deltaTime = 250;
+const unsigned int deltaTime = 350;
 
 
 //--------------------------------------
@@ -87,11 +87,14 @@ void ControlMotion()
     }
     currentTime /= 1000;
   
-    float Vrmax = radians(angleRight)/currentTime;
-    float Vlmax = radians(angleLeft)/currentTime;
+    float VrRef = radians(angleRight)/currentTime;
+    float VlRef = radians(angleLeft)/currentTime;
+
+    int voltrRef = carSpeed;
+    int voltlRef = carSpeed;
   
-    float Vr=Vrmax;
-    float Vl=Vlmax;
+    float Vr=VrRef;
+    float Vl=VlRef;
 
     //Serial.println(Vrmax);
     //Serial.println(Vlmax);
@@ -121,35 +124,35 @@ void ControlMotion()
     float omega = r*(Vr-Vl)/(2*R);
     float v = r*(Vr+Vl)/2;
 
-    Serial.println(omega);
-    Serial.println(v);
+    /*Serial.println(omega);
+    Serial.println(v);*/
     
     // current position of the car
     theta += omega * currentTime;
     x += cos(theta) * v * currentTime;
     y += sin(theta) * v * currentTime;
 
-    Serial.println(theta);
+    /*Serial.println(theta);
     Serial.println(x);
-    Serial.println(y);
+    Serial.println(y);*/
 
     //desired position of the car
     thetaCar += Omegacar * currentTime;
     xCar += Vcar * cos(thetaCar) * currentTime;
     yCar += Vcar * sin(thetaCar) * currentTime;
 
-    Serial.println(thetaCar);
+    /*Serial.println(thetaCar);
     Serial.println(xCar);
-    Serial.println(yCar);
+    Serial.println(yCar);*/
 
     //Errors happened
     float e1 = (xCar - x) * cos(theta) + (yCar - y) * sin(theta);
     float e2 = (xCar - x) * sin(theta) * -1.0 + (yCar - y) * cos(theta);
     float e3 = thetaCar - theta;
 
-    Serial.println(e1);
+    /*Serial.println(e1);
     Serial.println(e2);
-    Serial.println(e3);
+    Serial.println(e3);*/
     
 
     //set v and omega to the car
@@ -159,23 +162,23 @@ void ControlMotion()
     else
       omega = Omegacar;
 
-    Serial.println(v);
-    Serial.println(omega);
+    /*Serial.println(v);
+    Serial.println(omega);*/
 
     //get new vr and vl
     Vr = v / r + R / r * omega;
     Vl = v / r - R / r * omega;
 
-    Serial.println(Vr);
-    Serial.println(Vl);
+    /*Serial.println(Vr);
+    Serial.println(Vl);*/
    
 
     //get volt of right and left
-    Voltr = 255 / Vrmax * Vr;
-    Voltl = 255 / Vlmax * Vl;
+    Voltr = voltrRef / VrRef * Vr;
+    Voltl = voltlRef / VlRef * Vl;
 
-    Serial.println(Voltr);
-    Serial.println(Voltl);
+    /*Serial.println(Voltr);
+    Serial.println(Voltl);*/
 
      
 
@@ -202,23 +205,13 @@ void ControlMotion()
     Vr = radians(angleRight-oldAngleRight)/currentTime;
     Vl = radians(angleLeft-oldAngleLeft)/currentTime;
 
-    if (Vr > Vrmax)
-      Vrmax = Vr;
-
-    if (Vl > Vlmax)
-      Vlmax = Vl;
-
-    float newSpeed;
     if (Vl < Vr)
-      newSpeed = Vl;
+      Vcar = Vl;
     else
-      newSpeed = Vr;
+      Vcar = Vr;
 
-    if (newSpeed > Vcar)
-      Vcar = newSpeed;
-
-    Serial.println(Vr);
-    Serial.println(Vl);
+    /*Serial.println(Vr);
+    Serial.println(Vl);*/
 
     //delay(3000);
 
