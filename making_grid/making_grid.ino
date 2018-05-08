@@ -1,4 +1,3 @@
-
 #include <Servo.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,7 +16,6 @@ bit 16
 bits 9 -15  g value
 bits 5 -8 parent j 
 bits 1 -4 parent i
-
 h value will be calculated, f value is h + g
 */
 
@@ -342,7 +340,6 @@ void aStarSearch(uint8_t src, uint8_t dest)
         uint8_t iNew,jNew,point;
         
         /*  Generating all the 4 successor of this cell 
-
                       N   
                       |   
                       |  
@@ -350,7 +347,6 @@ void aStarSearch(uint8_t src, uint8_t dest)
                       | 
                       |  
                       S
-
             Cell-->Popped Cell (i, j)
             N -->  North       (i-1, j)
             S -->  South       (i+1, j)
