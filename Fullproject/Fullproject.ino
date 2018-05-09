@@ -4,6 +4,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#define ROW 15
+#define COL 15
+
 #define PAIRI 15
 #define ShPAIRI 0
 #define PAIRJ 240
@@ -50,7 +53,9 @@ const int servopin = 11;
 //Car position
 uint8_t currentCell,lastCell;
 uint8_t currentDegree = 1;
-uint8_t counter = 0;
+uint8_t dest = 0;
+
+uint16_t findedPath [int(COL*ROW/2)];
 
 void setup()
 {
@@ -78,6 +83,8 @@ void setup()
     uint8_t src = 0;    //0,0
     
     aStarSearch(src, dest);
+
+    lastCell = findedPath[0];
   
 }
 /*******************************************************************************************************************************/
@@ -295,7 +302,6 @@ uint8_t getFValue(uint8_t i,uint8_t j,uint8_t dest)
 // A Utility Function to trace the path from the source
 // to destination 
 // I just print the path, Do Whatever you want after find the path
-uint16_t findedPath [int(COL*ROW/2)];
 void pathFinded(uint8_t dest , uint8_t src)
 {
     
@@ -304,7 +310,7 @@ void pathFinded(uint8_t dest , uint8_t src)
     findedPath[0] = dest | (j<<ShGVAl);
     j--;
     i++;
-    uint8_t cell =dest;
+    uint8_t cell = dest;
     while (cell != src)
     {
         // Serial.print("<- (%d,%d) ",(cell & PAIRI)>>ShPAIRI,(cell & PAIRJ)>>ShPAIRJ);
@@ -560,11 +566,11 @@ void Move( int8_t deltaX, int8_t deltaY )
      //right
      //right
   }
-  else if ( difference == 1 || diiference == -3)
+  else if ( difference == 1 || difference == -3)
   {
       //left
    }
-  else if ( difference == -1 || diiference == 3)
+  else if ( difference == -1 || difference == 3)
   {   
     //right
   }   
@@ -579,21 +585,18 @@ void loop()
 {
     currentCell = nextCell(lastCell,dest);
 
+    Move( ( (currentCell & PAIRI)>>ShPAIRI) - ((lastCell & PAIRI)>>ShPAIRI),( (currentCell & PAIRJ)>>ShPAIRJ ) - ((lastCell & PAIRJ)>>ShPAIRJ));  
+    CreateGrid();
   
-    if ( currentCell == uint8_t(UNBLOCKED|GVAL|PAIRI|PAIRJ ) )
+    if ( currentCell == uint8_t(UNBLOCKED|GVAl|PAIRI|PAIRJ ) )
        {
           //Print on app "destination not found"
-          break;
        }
   
     if (currentCell == dest )
        {
           //Print on app "destination found"
-          break;
        }
-
-    Move( ( (lastCell & PAIRI)>>ShPAIRI) - ((currentCell & PAIRI)>>ShPAIRI),( (lastCell & PAIRJ)>>ShPAIRJ ) - ((currentCell & PAIRJ)>>ShPAIRJ));  
-    CreateGrid();
 
     lastCell = currentCell ;     
    
