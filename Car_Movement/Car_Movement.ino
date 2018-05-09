@@ -10,7 +10,7 @@ const int rightBackward = 6;
 const float carRadius = 7.65;
 const float wheelRadius = 3.15;
 
-const int cellSize = 400;
+const int cellSize = 20;
 
 int carSpeed = 255;
 
@@ -24,9 +24,8 @@ float Voltl;
 float Vcar;
 float Omegacar = 0;
 
-const float k1 = 1;
-const float k3 = 1.5;
-
+const float k1 = 2;
+const float k3 = 1;
 const unsigned int deltaTime = 350;
 
 
@@ -44,14 +43,14 @@ int distance;
 ///////Rotary encoder Variables///////
 
 //Left Rotary encoder
-const int RotaryLeft=13;
+const int RotaryLeft=12;
 
 int angleLeft=0;
 bool prevStateLeft=0;
 bool currentStateLeft=0;
 
 //Right Rotary encoder
-const int RotaryRight=12;
+const int RotaryRight=13;
 
 int angleRight=0;
 bool prevStateRight=0;
@@ -96,13 +95,10 @@ void ControlMotion()
     float Vr=VrRef;
     float Vl=VlRef;
 
-    //Serial.println(Vrmax);
-    //Serial.println(Vlmax);
+    /*Serial.println(Vr);
+    Serial.println(Vl);*/
 
-    if (Vr > Vl)
-      Vcar = Vl;
-    else
-      Vcar = Vr;
+    Vcar = (Vr + Vl) / 2.0;
 
     Vcar *= r;
 
@@ -132,6 +128,11 @@ void ControlMotion()
     x += cos(theta) * v * currentTime;
     y += sin(theta) * v * currentTime;
 
+    if (theta > radians(360))
+      theta -= radians(360);
+    if (theta < -1 * radians(360))
+      theta += radians(360);
+
     /*Serial.println(theta);
     Serial.println(x);
     Serial.println(y);*/
@@ -141,6 +142,16 @@ void ControlMotion()
     xCar += Vcar * cos(thetaCar) * currentTime;
     yCar += Vcar * sin(thetaCar) * currentTime;
 
+    if (thetaCar > radians(360))
+      thetaCar -= radians(360);
+    else if (thetaCar < -1 * radians(360))
+      thetaCar += radians(360);
+
+    if (xCar - x > 2)
+      xCar = x + 2;
+    else if (x - xCar > 2)
+      xCar = x - 2;
+    
     /*Serial.println(thetaCar);
     Serial.println(xCar);
     Serial.println(yCar);*/
@@ -171,21 +182,24 @@ void ControlMotion()
 
     /*Serial.println(Vr);
     Serial.println(Vl);*/
-   
+
+    Vcar = r * (Vl + Vr) / 2.0;
+
+    Voltr = (0.05692461 * Vr + 0.18672734) * 255;
+    Voltl = (0.00200427 * Vl * Vl + 0.01608561 * Vl + 0.20535106) * 255;
 
     //get volt of right and left
-    Voltr = voltrRef / VrRef * Vr;
-    Voltl = voltlRef / VlRef * Vl;
+    //Voltr = 255 / 17 * Vr;
+    //Voltl = 255 / 17 * Vl;
 
     /*Serial.println(Voltr);
     Serial.println(Voltl);*/
+ 
 
-     
+    analogWrite(leftForward,Voltl);
+    analogWrite(rightForward,Voltr);
 
-     analogWrite(leftForward,Voltl);
-     analogWrite(rightForward,Voltr);
-
-     begginningTime=millis();
+    begginningTime=millis();
     int oldAngleLeft = angleLeft;
     int oldAngleRight = angleRight;
 
@@ -204,11 +218,6 @@ void ControlMotion()
   
     Vr = radians(angleRight-oldAngleRight)/currentTime;
     Vl = radians(angleLeft-oldAngleLeft)/currentTime;
-
-    if (Vl < Vr)
-      Vcar = Vl;
-    else
-      Vcar = Vr;
 
     /*Serial.println(Vr);
     Serial.println(Vl);*/
@@ -481,6 +490,6 @@ void loop() {
   */
 
   ControlMotion();
-  delay(2000);
+  delay(5000);
   
 }
