@@ -1,7 +1,11 @@
+
 #include <Servo.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+
+#define ROW 15
+#define COL 15
 
 #define PAIRI 15
 #define ShPAIRI 0
@@ -16,6 +20,7 @@ bit 16
 bits 9 -15  g value
 bits 5 -8 parent j 
 bits 1 -4 parent i
+
 h value will be calculated, f value is h + g
 */
 
@@ -27,8 +32,6 @@ h value will be calculated, f value is h + g
 /*******************************************************************************************************************************/
 #define SIZE 15
 #define maped_grid_size 10
-#define xpos 1
-#define ypos 2
 uint16_t openList [SIZE*SIZE];
 #define FVAl          65280
 #define ShFVAl        8
@@ -46,18 +49,43 @@ const int trigPin2 =3;
 const int echoPin2 = 4;
 const int servopin = 11;
 
+
+//Car position
+uint8_t currentCell,lastCell;
+uint8_t currentDegree = 1;
+uint8_t dest = 0;
+
+uint16_t findedPath [int(COL*ROW/2)];
+
 void setup()
 {
+    
+    // decleration of pins type //
+    pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
+    pinMode(echoPin, INPUT); // Sets the echoPin as an Input
+    pinMode(trigPin2, OUTPUT); // Sets the trigPin as an Output
+    pinMode(echoPin2, INPUT); // Sets the echoPin as an Input
+    myservo.attach(11);
+    // initillize grid as if there doesn't exist any obstacles 
+    Inilizegrid();
+    Serial.begin(9600);
 
-// decleration of pins type //
-pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
-pinMode(echoPin, INPUT); // Sets the echoPin as an Input
-pinMode(trigPin2, OUTPUT); // Sets the trigPin as an Output
-pinMode(echoPin2, INPUT); // Sets the echoPin as an Input
-myservo.attach(11);
-// initillize grid as if there doesn't exist any obstacles 
-Inilizegrid();
- Serial.begin(9600);
+     //Read destination from app
+     //Serial with bluetooth
+     uint8_t dest = 0b11101110; //14,14
+    //Create Grid
+
+    CreateGrid();
+
+    //find path with Astar
+
+    //removeAllBlocks();
+    uint8_t src = 0;    //0,0
+    
+    aStarSearch(src, dest);
+
+    lastCell = findedPath[0];
+  
 }
 /*******************************************************************************************************************************/
 void Updategrid(int x,int y)
@@ -65,8 +93,8 @@ void Updategrid(int x,int y)
   int mx=0;
   int my=0;
 // mapped read distance to required valuce according to mapped_grid_size (each cell indicate ? distance on real)
-  mx = (int(x / maped_grid_size))+xpos;
-  my = (int(y / maped_grid_size))+ypos;
+  mx = (int(x / maped_grid_size))+ ( (currentCell & PAIRI) >> ShPAIRI );
+  my = (int(y / maped_grid_size))+ ( (currentCell & PAIRJ) >> ShPAIRJ );
   if ((mx >=0) && (mx < SIZE) && (my >=0) && (my < SIZE))
     grid[mx][ my] = 1; // to indicate that there exists obstacle at this place
 }
@@ -111,8 +139,8 @@ bool Ultrasonicread(float& d,int mode)
 /*******************************************************************************************************************************/
 void Conversion(float d,int a,int& x,int& y)
 {
- x = d*sin(a*PI/180);
- y = d*cos(a*PI / 180);
+    x = d*sin(a*PI/180.0 + currentDegree/2.0);
+    y = d*cos(a*PI/180.0 + currentDegree/2.0);
 }
 /*******************************************************************************************************************************/
 void setservoangle()
@@ -271,22 +299,66 @@ uint8_t getFValue(uint8_t i,uint8_t j,uint8_t dest)
 
 
 
-
-
 // A Utility Function to trace the path from the source
 // to destination 
 // I just print the path, Do Whatever you want after find the path
 void pathFinded(uint8_t dest , uint8_t src)
 {
-    //printf ("\nThe Path is ");
-    uint8_t cell =dest;
+    
+    uint8_t i = 0;
+    uint8_t j = 255;
+    findedPath[0] = dest | (j<<ShGVAl);
+    j--;
+    i++;
+    uint8_t cell = dest;
     while (cell != src)
     {
-        //printf("<- (%d,%d) ",(cell & PAIRI)>>ShPAIRI,(cell & PAIRJ)>>ShPAIRJ);
+        // Serial.print("<- (%d,%d) ",(cell & PAIRI)>>ShPAIRI,(cell & PAIRJ)>>ShPAIRJ);
         cell = grid[((cell & PAIRI)>>ShPAIRI)][((cell & PAIRJ)>>ShPAIRJ)] ;
+        findedPath[i] = cell | (j<<ShGVAl);
+        i++;
+        j--;
     }
-    //printf("<- (%d,%d) ",(cell & PAIRI)>>ShPAIRI,(cell & PAIRJ)>>ShPAIRJ);
+    
+    findedPath[i] = src | (j<<ShGVAl);
+    i++;
+    j--;
+    
+    for (;i<int(COL*ROW/2);i++)
+    {
+        findedPath[i]= UNBLOCKED | GVAl | PAIRI | PAIRJ;
+    }
+
+    qsort( findedPath, int(COL*ROW/2), sizeof(*findedPath),compareFunction);
+    //finded path have the path from finded path[0] (source) to finded path[?] (destenation) and then 2**16
+    //if you want x,y of x = (finded path[0] & PAIRI)>>ShPAIRI) , y = (finded path[0] & PAIRJ)>>ShPAIRJ)
     return;
+}
+
+uint8_t nextCell (uint8_t currentCell, uint8_t dest)
+{
+    uint8_t i =0;
+    if (uint8_t(findedPath[i]) == uint8_t(UNBLOCKED | GVAl | PAIRI | PAIRJ))
+        return uint8_t(UNBLOCKED | GVAl | PAIRI | PAIRJ);
+        
+    while (i< int(COL*ROW/2) && currentCell != uint8_t(findedPath[i]))
+        i++;
+    
+    i++;
+    uint8_t next = uint8_t(findedPath[i]);
+    while (i< int(COL*ROW/2) && ((grid[((findedPath[i] & PAIRI)>>ShPAIRI)][((findedPath[i] & PAIRJ) >>ShPAIRJ)] & UNBLOCKED) >> ShUNBLOCKED) )
+        i++;
+
+    if (i== int(COL*ROW/2))
+        return next;
+    
+    aStarSearch(currentCell,dest);
+    if (uint8_t(findedPath[0]) == uint8_t(UNBLOCKED | GVAl | PAIRI | PAIRJ))
+        return uint8_t(UNBLOCKED | GVAl | PAIRI | PAIRJ);
+
+    return findedPath[1];
+        
+    
 }
 
 // A Function to find the shortest path between
@@ -340,6 +412,7 @@ void aStarSearch(uint8_t src, uint8_t dest)
         uint8_t iNew,jNew,point;
         
         /*  Generating all the 4 successor of this cell 
+
                       N   
                       |   
                       |  
@@ -347,6 +420,7 @@ void aStarSearch(uint8_t src, uint8_t dest)
                       | 
                       |  
                       S
+
             Cell-->Popped Cell (i, j)
             N -->  North       (i-1, j)
             S -->  South       (i+1, j)
@@ -409,7 +483,8 @@ void aStarSearch(uint8_t src, uint8_t dest)
     // reach the destiantion cell. This may happen when the
     // there is no way to destination cell (due to blockages)
     // printf("Failed to find the Destination Cell\n"); 
-    Serial.println("R"); 
+    for (i=0;i<int(COL*ROW/2) ; i++)
+     findedPath [i]= UNBLOCKED | GVAl | PAIRI | PAIRJ;
     return;
 }
 
@@ -425,56 +500,104 @@ void removeAllBlocks ()
             grid[i][j] |= (1<<ShUNBLOCKED);
 }
 
- 
-// Driver program to test above function
+
+void CreateGrid()
+{
+    servo_angle = 0;
+    // loop for 360 degree to get region's grid 
+    while (servo_angle<=180)
+    {
+      // note all of this functions works on only one ultrasonic 
+      float distance = 0.0;
+      int x=0;
+      int y=0;
+      // change angle of servo in order to get data from ultrasonic
+    
+     setservoangle();
+     //Serial.println(servo_angle);
+      // get reading of ultrasonic and check if there exist obstacle or not +
+     bool obstacle =Ultrasonicread(distance,1);
+     //Serial.println(distance);
+      // if there exit obstacle convert it to be mapped and updated in grid
+      if (obstacle)  {
+        Conversion(distance,servo_angle,x,y);
+        addBlock(x,y);
+     }
+     obstacle =Ultrasonicread(distance,2);
+     //Serial.println(distance);
+      // if there exit obstacle convert it to be mapped and updated in grid
+      if (obstacle)
+       {
+        Conversion(distance,(servo_angle+180),x,y);
+        addBlock(x,y); 
+      }
+     // increment servo angle to check following places 
+      servo_angle += 30;
+      delay(100);
+    //  printing grid 
+//     for (int i = 0; i < SIZE; i++)
+//        for (int j = 0; j < SIZE; j++)
+//            Serial.println (grid[i][j]);
+      delay(1000);
+  }
+
+  
+    
+}
+
+void Move( int8_t deltaX, int8_t deltaY )
+{
+  int8_t degree;
+  if (deltaX == 1)
+    degree =0;
+  else if (deltaX == -1)
+     degree =2;
+
+  if (deltaY == 1)
+    degree =1;
+  else if (deltaY == -1)
+     degree =3;
+
+     
+  int8_t difference = degree - currentDegree;
+  
+  if (abs(difference) == 2 )
+  {  
+     //right
+     //right
+  }
+  else if ( difference == 1 || difference == -3)
+  {
+      //left
+   }
+  else if ( difference == -1 || difference == 3)
+  {   
+    //right
+  }   
+  
+  //forward
+  currentDegree = degree;    
+
+}
 
 
 void loop()
 {
-   servo_angle = 0;
-  // loop for 360 degree to get region's grid 
-while (servo_angle<=180)
-{
-  // note all of this functions works on only one ultrasonic 
-float distance = 0.0;
-int x=0;
-int y=0;
-  // change angle of servo in order to get data from ultrasonic
-// 
-  setservoangle();
-   Serial.println(servo_angle);
-  // get reading of ultrasonic and check if there exist obstacle or not +
- bool obstacle =Ultrasonicread(distance,1);
- Serial.println(distance);
-  // if there exit obstacle convert it to be mapped and updated in grid
-  if (obstacle)  {
-    Conversion(distance,servo_angle,x,y);
-    addBlock(x,y);
- }
- obstacle =Ultrasonicread(distance,2);
-  Serial.println(distance);
-  // if there exit obstacle convert it to be mapped and updated in grid
-  if (obstacle)
-   {
-    Conversion(distance,(servo_angle+180),x,y);
-    addBlock(x,y); 
-  }
- // increment servo angle to check following places 
-  servo_angle += 30;
-  delay(100);
-//  printing grid 
- for (int i = 0; i < SIZE; i++)
-    for (int j = 0; j < SIZE; j++)
-     Serial.println (grid[i][j]);
-  delay(1000);
+    currentCell = nextCell(lastCell,dest);
 
-  //removeAllBlocks();
-    uint8_t src = 0;    //0,0
-    uint8_t dest = 0b11101110; //14,14
-    
-  aStarSearch(src, dest);
+    Move( ( (currentCell & PAIRI)>>ShPAIRI) - ((lastCell & PAIRI)>>ShPAIRI),( (currentCell & PAIRJ)>>ShPAIRJ ) - ((lastCell & PAIRJ)>>ShPAIRJ));  
+    CreateGrid();
+  
+    if ( currentCell == uint8_t(UNBLOCKED|GVAl|PAIRI|PAIRJ ) )
+       {
+          //Print on app "destination not found"
+       }
+  
+    if (currentCell == dest )
+       {
+          //Print on app "destination found"
+       }
+
+    lastCell = currentCell ;     
+   
 }
-}
-
-
-

@@ -26,6 +26,8 @@ bits 5-8 parent j
 #define PAIRJ 240
 #define ShPAIRJ 4
 
+
+void aStarSearch(uint8_t src, uint8_t dest);
 /* Description of the Grid-
 16 bit for every cell
 bit 16
@@ -193,21 +195,62 @@ uint8_t getFValue(uint8_t i,uint8_t j,uint8_t dest)
 
 
 
-
 // A Utility Function to trace the path from the source
 // to destination 
-// I just print the path, Do Whatever you want after find the path
+uint16_t findedPath [int(COL*ROW/2)];
 void pathFinded(uint8_t dest , uint8_t src)
 {
-    //printf ("\nThe Path is ");
+    
+    uint8_t i = 0;
+    uint8_t j = 255;
+    findedPath[0] = dest | (j<<ShGVAl);
+    j--;
+    i++;
     uint8_t cell =dest;
     while (cell != src)
     {
-        //printf("<- (%d,%d) ",(cell & PAIRI)>>ShPAIRI,(cell & PAIRJ)>>ShPAIRJ);
+        printf("<- (%d,%d) ",(cell & PAIRI)>>ShPAIRI,(cell & PAIRJ)>>ShPAIRJ);
         cell = grid[((cell & PAIRI)>>ShPAIRI)][((cell & PAIRJ)>>ShPAIRJ)] ;
+        findedPath[i] = cell | (j<<ShGVAl);
+        i++;
+        j--;
     }
-    //printf("<- (%d,%d) ",(cell & PAIRI)>>ShPAIRI,(cell & PAIRJ)>>ShPAIRJ);
+    
+    for (;i<int(COL*ROW/2);i++)
+    {
+        findedPath[i]= UNBLOCKED | GVAl | PAIRI | PAIRJ;
+    }
+
+    qsort( findedPath, int(COL*ROW/2), sizeof(*findedPath),compareFunction);
+    //finded path have the path from finded path[0] (source) to finded path[?] (destenation) and then 2**16
+    //if you want x,y of x = (finded path[0] & PAIRI)>>ShPAIRI) , y = (finded path[0] & PAIRJ)>>ShPAIRJ)
     return;
+}
+
+uint8_t nextCell (uint8_t currentCell, uint8_t dest)
+{
+    uint8_t i =0;
+    if (uint8_t(findedPath[i]) == uint8_t(UNBLOCKED | GVAl | PAIRI | PAIRJ))
+        return uint8_t(UNBLOCKED | GVAl | PAIRI | PAIRJ);
+        
+    while (i< int(COL*ROW/2) && currentCell != uint8_t(findedPath[i]))
+        i++;
+    
+    i++;
+    uint8_t next = uint8_t(findedPath[i]);
+    while (i< int(COL*ROW/2) && ((grid[((findedPath[i] & PAIRI)>>ShPAIRI)][((findedPath[i] & PAIRJ) >>ShPAIRJ)] & UNBLOCKED) >> ShUNBLOCKED) )
+        i++;
+
+    if (i== int(COL*ROW/2))
+        return next;
+    
+    aStarSearch(currentCell,dest);
+    if (uint8_t(findedPath[0]) == uint8_t(UNBLOCKED | GVAl | PAIRI | PAIRJ))
+        return uint8_t(UNBLOCKED | GVAl | PAIRI | PAIRJ);
+
+    return findedPath[1];
+        
+    
 }
 
 // A Function to find the shortest path between
@@ -294,7 +337,7 @@ void aStarSearch(uint8_t src, uint8_t dest)
                     // Set the Parent of the destination cell
                     grid[iNew][jNew] &= ~ ((PAIRI|PAIRJ));
                     grid[iNew][jNew] |= (i<<ShPAIRI) | (j<<ShPAIRJ) ;
-                    Serial.print ("The destination cell is found\n");
+                    // Serial.print ("The destination cell is found\n");
                     pathFinded (dest,src);
                     return;
                 }
@@ -332,7 +375,10 @@ void aStarSearch(uint8_t src, uint8_t dest)
     // list is empty, then we conclude that we failed to
     // reach the destiantion cell. This may happen when the
     // there is no way to destination cell (due to blockages)
-    Serial.print("Failed to find the Destination Cell\n"); 
+    // Serial.print("Failed to find the Destination Cell\n"); 
+    for (i=0;i<int(COL*ROW/2) ; i++)
+        findedPath [i]= UNBLOCKED | GVAl | PAIRI | PAIRJ;
+
     return;
 }
  
@@ -340,22 +386,20 @@ void aStarSearch(uint8_t src, uint8_t dest)
 // Driver program to test above function
 int main()
 {
-    Serial.begin(9600);
+    // Serial.begin(9600);
     removeAllBlocks();
     uint8_t src = 0;    //0,0
     uint8_t dest = 0b11101110; //14,14
-    
-    //make some obstcals
-   for (int j=1;j<15;j+=4)
-    {
-        for (int i=0;i<14;i++)
-            addBlock(j,i);
-        for (int i=14;i>0;i--)
-            addBlock(j+2,i);
-    }
-
-
     aStarSearch(src, dest);
-    Serial.print("\n");
+    
+    uint8_t test = nextCell(4,dest);
+    printf("\n%d\n",uint8_t(test));
+    addBlock(5,0);
+    test = nextCell(4,dest);
+
+    printf("\n%d\n",uint8_t(test));
+    printf("\n%d\n",uint8_t(findedPath[0]));
+
+    // Serial.print("\n");
     return(0);
 }
