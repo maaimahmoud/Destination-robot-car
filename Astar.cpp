@@ -209,7 +209,7 @@ void pathFinded(uint8_t dest , uint8_t src)
     uint8_t cell =dest;
     while (cell != src)
     {
-        // printf("<- (%d,%d) ",(cell & PAIRI)>>ShPAIRI,(cell & PAIRJ)>>ShPAIRJ);
+        printf("<- (%d,%d) ",(cell & PAIRI)>>ShPAIRI,(cell & PAIRJ)>>ShPAIRJ);
         cell = grid[((cell & PAIRI)>>ShPAIRI)][((cell & PAIRJ)>>ShPAIRJ)] ;
         findedPath[i] = cell | (j<<ShGVAl);
         i++;
@@ -244,7 +244,7 @@ uint8_t nextCell (uint8_t currentCell, uint8_t dest)
     if (i== int(COL*ROW/2))
         return next;
     
-    aStarSearch(next,dest);
+    aStarSearch(currentCell,dest);
     if (uint8_t(findedPath[0]) == uint8_t(UNBLOCKED | GVAl | PAIRI | PAIRJ))
         return uint8_t(UNBLOCKED | GVAl | PAIRI | PAIRJ);
 
@@ -392,9 +392,14 @@ int main()
     uint8_t dest = 0b11101110; //14,14
     aStarSearch(src, dest);
     
-    uint8_t test = nextCell(0,dest);
-    
-    // printf("\n\n\n%d\n\n\n",uint8_t(test));
+    uint8_t test = nextCell(4,dest);
+    printf("\n%d\n",uint8_t(test));
+    addBlock(5,0);
+    test = nextCell(4,dest);
+
+    printf("\n%d\n",uint8_t(test));
+    printf("\n%d\n",uint8_t(findedPath[0]));
+
     // Serial.print("\n");
     return(0);
 }

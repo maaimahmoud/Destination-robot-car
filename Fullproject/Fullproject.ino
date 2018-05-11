@@ -352,7 +352,7 @@ uint8_t nextCell (uint8_t currentCell, uint8_t dest)
     if (i== int(COL*ROW/2))
         return next;
     
-    aStarSearch(next,dest);
+    aStarSearch(currentCell,dest);
     if (uint8_t(findedPath[0]) == uint8_t(UNBLOCKED | GVAl | PAIRI | PAIRJ))
         return uint8_t(UNBLOCKED | GVAl | PAIRI | PAIRJ);
 
