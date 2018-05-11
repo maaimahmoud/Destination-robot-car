@@ -493,6 +493,12 @@ void addBlock (uint8_t i,uint8_t j)
 {
     grid[i][j] &= ~(1<<ShUNBLOCKED);
 }
+void initGrad()
+{
+    for (uint8_t i =0;i<SIZE;i++)
+        for (uint8_t j =0;j<SIZE;j++)
+            grid[i][j] = UNBLOCKED | GVAl | PAIRI | PAIRJ;
+}
 void removeAllBlocks ()
 {
     for (uint8_t i =0;i<SIZE;i++)
@@ -538,7 +544,7 @@ void CreateGrid()
 //     for (int i = 0; i < SIZE; i++)
 //        for (int j = 0; j < SIZE; j++)
 //            Serial.println (grid[i][j]);
-      delay(1000);
+      //delay(1000);
   }
 
   
