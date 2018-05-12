@@ -5,8 +5,8 @@
 #define xpos 0
 #define ypos 0
 
-#define  leftForward 9
-#define leftBackward 10
+#define  leftForward 3
+#define leftBackward 11
 #define rightForward 5
 #define rightBackward 6
 
@@ -440,10 +440,10 @@ Servo myservo;
 // setting name of pins in order to use it easily in code//
 // setting name of pins in order to use it easily in code//
 #define trigPin 2
-#define echoPin 3
+#define echoPin 8
 #define trigPin2 2
 #define echoPin2 4
-#define servopin 11
+#define servopin 9
 void setup() {
   // decleration of pins type //
   pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
@@ -541,7 +541,10 @@ void setservoangle()
 {
   // send required angle to servo //
   myservo.write(servo_angle);
-  delay(600);
+  if (servo_angle == 0 )
+    delay(600);
+  else
+    delay(50);
 }
 /*******************************************************************************************************************************/
 
@@ -588,7 +591,7 @@ void constractGrad() {
     //    Updategrid(x,y);
     //  }
     // // increment servo angle to check following places
-    servo_angle += 30;
+    servo_angle += 5;
     delay(500);
     //  printing grid
 
@@ -605,7 +608,7 @@ void constractGrad() {
 
   }
   // delay(100000000000000);
-  myservo.detach();
+//  myservo.detach();
 }
 
 // defines variables
@@ -974,34 +977,34 @@ void Move( int8_t deltaX, int8_t deltaY )
 void loop()
 
 {
-    RunRightward();
-    RunForward();
-    RunForward();
-//  currentCell = nextCell(lastCell, dest);
-//  Serial.println("lastCell");
-//  Serial.println(lastCell);
-//  Serial.println("currentCell");
-//  Serial.println(currentCell);
-//  Serial.println("Call move");
-//  Move( ( (currentCell & PAIRI) >> ShPAIRI) - ((lastCell & PAIRI) >> ShPAIRI), ( (currentCell & PAIRJ) >> ShPAIRJ ) - ((lastCell & PAIRJ) >> ShPAIRJ));
-//  //CreateGrid();
-//  Serial.println("move ended");
-//
-//  if ( currentCell == uint8_t(UNBLOCKED | GVAl | PAIRI | PAIRJ ) )
-//  {
-//    //Print on app "destination not found"
-//    Serial.println("not found");
-//    delay(10000000000);
-//  }
-//
-//  if (currentCell == dest )
-//  {
-//    //Print on app "destination found"
-//    Serial.println("found");
-//    delay(10000000000);
-//  }
-//
-//  lastCell = currentCell ;
+//    RunRightward();
+//    RunForward();
+//    RunForward();
+  currentCell = nextCell(lastCell, dest);
+  Serial.println("lastCell");
+  Serial.println(lastCell);
+  Serial.println("currentCell");
+  Serial.println(currentCell);
+  Serial.println("Call move");
+  Move( ( (currentCell & PAIRI) >> ShPAIRI) - ((lastCell & PAIRI) >> ShPAIRI), ( (currentCell & PAIRJ) >> ShPAIRJ ) - ((lastCell & PAIRJ) >> ShPAIRJ));
+  //CreateGrid();
+  Serial.println("move ended");
+
+  if ( currentCell == uint8_t(UNBLOCKED | GVAl | PAIRI | PAIRJ ) )
+  {
+    //Print on app "destination not found"
+    Serial.println("not found");
+    delay(10000000000);
+  }
+
+  if (currentCell == dest )
+  {
+    //Print on app "destination found"
+    Serial.println("found");
+    delay(10000000000);
+  }
+
+  lastCell = currentCell ;
 
   //  removeAllBlocks();
   //  uint8_t src = 0;    //0,0
