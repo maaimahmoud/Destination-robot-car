@@ -432,7 +432,7 @@ void aStarSearch(uint8_t src, uint8_t dest)
 
 uint8_t currentCell,lastCell;
 uint8_t currentDegree = 1;
-uint8_t dest = 0b00100010;
+uint8_t dest = 0b00110100;
 
 
 int servo_angle = 0;
@@ -534,7 +534,7 @@ bool Ultrasonicread(float& d, int mode)
 void Conversion(float d, int a, int& x, int& y)
 {
   x = (d + 17) * cos(radians(a)) + 0;
-  y = (d + 16) * sin(radians(a)) + 8.5;
+  y = (d + 16) * sin(radians(a)) + 4.5;
 }
 /*******************************************************************************************************************************/
 void setservoangle()
@@ -578,19 +578,19 @@ void constractGrad() {
       Serial.println(servo_angle);
       Updategrid(x, y);
     }
-    // obstacle =Ultrasonicread(distance,2);
-    //  Serial.println(distance);
-    //  // if there exit obstacle convert it to be mapped and updated in grid
-    //  if (obstacle)
-    //   {
-    //    Conversion(distance,(servo_angle+180),x,y);
-    //    Serial.println("distance2 = ");
-    //        Serial.println(distance);
-    //        Serial.println("angle2 = ");
-    //        Serial.println(servo_angle);
-    //    Updategrid(x,y);
-    //  }
-    // // increment servo angle to check following places
+     obstacle =Ultrasonicread(distance,2);
+      Serial.println(distance);
+      // if there exit obstacle convert it to be mapped and updated in grid
+      if (obstacle)
+       {
+        Conversion(distance,(servo_angle+180),x,y);
+        Serial.println("distance2 = ");
+            Serial.println(distance);
+            Serial.println("angle2 = ");
+            Serial.println(servo_angle);
+        Updategrid(x,y);
+      }
+     // increment servo angle to check following places
     servo_angle += 5;
     delay(500); 
     //  printing grid
@@ -762,7 +762,7 @@ void RunLeftward()
   int centerSensor = analogRead(IRcenter);
   bool forward = true;
 
-  int degree = 75;
+  int degree = 80;
   angleLeft = 0;
   angleRight = 0;
   while ( (/*rightSensor < 200 ||*/  leftSensor < 200 || centerSensor < 200) )
