@@ -102,7 +102,7 @@ void setup()
     pinMode(RotaryLeft,INPUT); //Set pins for left rotary encoder as an input to get angle
     pinMode(RotaryRight,INPUT); //Set pins for right rotary encoder as an input to get angle
   
-    pinMode(IRright, INPUT);
+      pinMode(IRright, INPUT);
     pinMode(IRleft, INPUT);
     pinMode(IRcenter, INPUT);
     
@@ -627,11 +627,6 @@ void CreateGrid()
 //        for (int j = 0; j < SIZE; j++)
 //            Serial.println (grid[i][j]);
       //delay(1000);
-<<<<<<< HEAD
-
-      Serial.println(servo_angle);
-=======
->>>>>>> 89f8332fa80a70352f3d0e470a45cb69cdc5673e
   }
 
 Serial.println("printing grid");

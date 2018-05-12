@@ -468,7 +468,7 @@ void setup() {
   pinMode(IRcenter, INPUT);
   
   constractGrad();
-      uint8_t src = 0;    //0,0
+  uint8_t src = 0;    //0,0
 
   Serial.println("Call aStar");
   aStarSearch(src, dest);
@@ -485,8 +485,8 @@ void Updategrid(int x, int y)
   int mx = 0;
   int my = 0;
   // mapped read distance to required valuce according to mapped_grid_size (each cell indicate ? distance on real)
-  mx = (int((x) / maped_grid_size)) + xpos;
-  my = (int((y) / maped_grid_size)) + ypos;
+  mx = (int(float(x) / maped_grid_size + 0.5)) + xpos;
+  my = (int(float(y) / maped_grid_size + 0.5)) + ypos;
   Serial.println("x = ");
   Serial.println(mx);
   Serial.println("y = ");
@@ -533,8 +533,8 @@ bool Ultrasonicread(float& d, int mode)
 /*******************************************************************************************************************************/
 void Conversion(float d, int a, int& x, int& y)
 {
-  x = (d + 17) * cos(radians(a));
-  y = (d + 16) * sin(radians(a));
+  x = (d + 17) * cos(radians(a)) + 0;
+  y = (d + 16) * sin(radians(a)) + 8.5;
 }
 /*******************************************************************************************************************************/
 void setservoangle()
@@ -544,7 +544,7 @@ void setservoangle()
   if (servo_angle == 0 )
     delay(600);
   else
-    delay(50);
+    delay(100);
 }
 /*******************************************************************************************************************************/
 
@@ -592,7 +592,7 @@ void constractGrad() {
     //  }
     // // increment servo angle to check following places
     servo_angle += 5;
-    delay(500);
+    delay(500); 
     //  printing grid
 
   }
@@ -607,6 +607,7 @@ void constractGrad() {
     }
 
   }
+  delay(500);
   // delay(100000000000000);
 //  myservo.detach();
 }
@@ -981,6 +982,14 @@ void loop()
 //    RunForward();
 //    RunForward();
   currentCell = nextCell(lastCell, dest);
+
+    if ( currentCell == uint8_t(UNBLOCKED | GVAl | PAIRI | PAIRJ ) )
+  {
+    //Print on app "destination not found"
+    Serial.println("not found");
+    delay(10000000000);
+  }
+  
   Serial.println("lastCell");
   Serial.println(lastCell);
   Serial.println("currentCell");
@@ -989,13 +998,6 @@ void loop()
   Move( ( (currentCell & PAIRI) >> ShPAIRI) - ((lastCell & PAIRI) >> ShPAIRI), ( (currentCell & PAIRJ) >> ShPAIRJ ) - ((lastCell & PAIRJ) >> ShPAIRJ));
   //CreateGrid();
   Serial.println("move ended");
-
-  if ( currentCell == uint8_t(UNBLOCKED | GVAl | PAIRI | PAIRJ ) )
-  {
-    //Print on app "destination not found"
-    Serial.println("not found");
-    delay(10000000000);
-  }
 
   if (currentCell == dest )
   {
@@ -1008,7 +1010,7 @@ void loop()
 
   //  removeAllBlocks();
   //  uint8_t src = 0;    //0,0
-  //  uint8_t dests = 0b00100010; //14,14
+  // uint8_t dests = 0b00000010; //0,2
   //  constractGrad();
   //  aStarSearch(src, dests);
   //  uint8_t test = nextCell(test, dests );
