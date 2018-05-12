@@ -1,4 +1,3 @@
-
 #include <Servo.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,7 +30,7 @@ h value will be calculated, f value is h + g
 
 /*******************************************************************************************************************************/
 #define SIZE 15
-#define maped_grid_size 10
+#define maped_grid_size 20
 uint16_t openList [SIZE*SIZE];
 #define FVAl          65280
 #define ShFVAl        8
@@ -43,22 +42,71 @@ int servo_angle = 0;
 uint16_t grid[SIZE][SIZE];
 Servo myservo;
 // setting name of pins in order to use it easily in code//
-const int trigPin =7;
-const int echoPin = 8;
-const int trigPin2 =3;
+const int trigPin = 2;
+const int echoPin = 3;
+const int trigPin2 = 2;
 const int echoPin2 = 4;
 const int servopin = 11;
 
 
+const int leftForward = 9;
+const int leftBackward = 10;
+const int rightForward = 5;
+const int rightBackward = 6;
+
+const int IRright = A0;
+const int IRleft = A1;
+const int IRcenter = A2;
+
+
+
 //Car position
+const float carRadius = 7.65;
+const float wheelRadius = 3.15;
+
 uint8_t currentCell,lastCell;
 uint8_t currentDegree = 1;
-uint8_t dest = 0;
+uint8_t dest = 0b00100010;
 
 uint16_t findedPath [int(COL*ROW/2)];
 
+//--------------------------------------
+
+///////Rotary encoder Variables///////
+
+//Left Rotary encoder
+const int RotaryLeft=12;
+
+int angleLeft=0;
+bool prevStateLeft=0;
+bool currentStateLeft=0;
+
+//Right Rotary encoder
+const int RotaryRight=13;
+
+int angleRight=0;
+bool prevStateRight=0;
+bool currentStateRight=0;
+
+//--------------------------------------
+
+
 void setup()
 {
+    pinMode(leftForward, OUTPUT);
+    pinMode(leftBackward, OUTPUT);
+    pinMode(rightForward, OUTPUT);
+    pinMode(rightBackward, OUTPUT);
+  
+    //Rotary encoder Pins
+    pinMode(RotaryLeft,INPUT); //Set pins for left rotary encoder as an input to get angle
+    pinMode(RotaryRight,INPUT); //Set pins for right rotary encoder as an input to get angle
+  
+      pinMode(IRright, INPUT);
+    pinMode(IRleft, INPUT);
+    pinMode(IRcenter, INPUT);
+    
+
     
     // decleration of pins type //
     pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
@@ -68,25 +116,44 @@ void setup()
     myservo.attach(11);
     // initillize grid as if there doesn't exist any obstacles 
     Inilizegrid();
+    removeAllBlocks();
     Serial.begin(9600);
 
      //Read destination from app
      //Serial with bluetooth
-     uint8_t dest = 0b11101110; //14,14
+     //uint8_t dest = 0b11101110; //14,14
     //Create Grid
-
+    Serial.println("Call creategrid");
     CreateGrid();
 
     //find path with Astar
 
     //removeAllBlocks();
     uint8_t src = 0;    //0,0
-    
+   Serial.println("Call aStar");
     aStarSearch(src, dest);
+        Serial.println("end aStar");
 
     lastCell = findedPath[0];
-  
+  Serial.println(lastCell);
 }
+
+void ReadLeftRotary()
+{
+      prevStateLeft=currentStateLeft;
+    currentStateLeft=digitalRead(RotaryLeft);
+  if (currentStateLeft != prevStateLeft)
+     angleLeft=(angleLeft+9);
+}
+
+void ReadRightRotary()
+{
+      prevStateRight=currentStateRight;
+  currentStateRight=digitalRead(RotaryRight);
+   if (currentStateRight != prevStateRight)
+     angleRight=(angleRight+9);
+}
+
 /*******************************************************************************************************************************/
 void Updategrid(int x,int y)
 {
@@ -95,15 +162,19 @@ void Updategrid(int x,int y)
 // mapped read distance to required valuce according to mapped_grid_size (each cell indicate ? distance on real)
   mx = (int(x / maped_grid_size))+ ( (currentCell & PAIRI) >> ShPAIRI );
   my = (int(y / maped_grid_size))+ ( (currentCell & PAIRJ) >> ShPAIRJ );
+  Serial.println("x = ");
+  Serial.println(mx);
+  Serial.println("y = ");
+  Serial.println(my);
   if ((mx >=0) && (mx < SIZE) && (my >=0) && (my < SIZE))
-    grid[mx][ my] = 1; // to indicate that there exists obstacle at this place
+    addBlock(mx,my);
 }
 /*******************************************************************************************************************************/
 void Inilizegrid()
 {
   for (int i = 0; i < SIZE; i++)
     for (int j = 0; j < SIZE; j++)
-      grid[i][j] = 0; // to indicate that there doesn't exist any obstacle
+      grid[i][j] = UNBLOCKED | GVAl | PAIRI | PAIRJ; // to indicate that there doesn't exist any obstacle
 
 }
 /*******************************************************************************************************************************/
@@ -139,8 +210,9 @@ bool Ultrasonicread(float& d,int mode)
 /*******************************************************************************************************************************/
 void Conversion(float d,int a,int& x,int& y)
 {
-    x = d*sin(a*PI/180.0 + currentDegree/2.0);
-    y = d*cos(a*PI/180.0 + currentDegree/2.0);
+    Serial.println(a);
+    x = d*sin(radians(a)/**PI/180.0 /*+ currentDegree/2.0*/);
+    y = d*cos(radians(a)/**PI/180.0 /*+ currentDegree/2.0*/);
 }
 /*******************************************************************************************************************************/
 void setservoangle()
@@ -493,6 +565,12 @@ void addBlock (uint8_t i,uint8_t j)
 {
     grid[i][j] &= ~(1<<ShUNBLOCKED);
 }
+void initGrad()
+{
+    for (uint8_t i =0;i<SIZE;i++)
+        for (uint8_t j =0;j<SIZE;j++)
+            grid[i][j] = UNBLOCKED | GVAl | PAIRI | PAIRJ;
+}
 void removeAllBlocks ()
 {
     for (uint8_t i =0;i<SIZE;i++)
@@ -503,6 +581,7 @@ void removeAllBlocks ()
 
 void CreateGrid()
 {
+  Serial.println("Create grid begin");
     servo_angle = 0;
     // loop for 360 degree to get region's grid 
     while (servo_angle<=180)
@@ -521,7 +600,11 @@ void CreateGrid()
       // if there exit obstacle convert it to be mapped and updated in grid
       if (obstacle)  {
         Conversion(distance,servo_angle,x,y);
-        addBlock(x,y);
+        Serial.println("distance = ");
+        Serial.println(distance);
+        Serial.println("angle = ");
+        Serial.println(servo_angle);
+        Updategrid(x, y);
      }
      obstacle =Ultrasonicread(distance,2);
      //Serial.println(distance);
@@ -529,17 +612,33 @@ void CreateGrid()
       if (obstacle)
        {
         Conversion(distance,(servo_angle+180),x,y);
-        addBlock(x,y); 
+        Serial.println("distance2 = ");
+        Serial.println(distance);
+        Serial.println("angle2 = ");
+        Serial.println(servo_angle);
+        Updategrid(x, y);
+
       }
      // increment servo angle to check following places 
       servo_angle += 30;
-      delay(100);
+      delay(10000);
     //  printing grid 
 //     for (int i = 0; i < SIZE; i++)
 //        for (int j = 0; j < SIZE; j++)
 //            Serial.println (grid[i][j]);
-      delay(1000);
+      //delay(1000);
   }
+
+Serial.println("printing grid");
+  for (int i = 0; i < SIZE; i++)
+  {
+    Serial.println("next line");
+        for (int j = 0; j < SIZE; j++)
+           Serial.println (grid[i][j]);
+  }
+    
+
+  Serial.println("Create grid end");
 
   
     
@@ -547,6 +646,8 @@ void CreateGrid()
 
 void Move( int8_t deltaX, int8_t deltaY )
 {
+  Serial.println(deltaX);
+  Serial.println(deltaY);
   int8_t degree;
   if (deltaX == 1)
     degree =0;
@@ -565,37 +666,285 @@ void Move( int8_t deltaX, int8_t deltaY )
   {  
      //right
      //right
+     /*RunRightward();
+     RunRightward();*/
+     Serial.println("run right right");
   }
   else if ( difference == 1 || difference == -3)
   {
       //left
+      //RunLeftward();
+      Serial.println("run left");
    }
   else if ( difference == -1 || difference == 3)
   {   
     //right
+    //RunRightward();
+    Serial.println("run right");
   }   
   
   //forward
+  //RunForward();
+  Serial.println("run forward");
   currentDegree = degree;    
 
+}
+
+
+void RunForward()
+{
+  //run forward
+  analogWrite(rightForward,190);
+  analogWrite(rightBackward,0);
+  analogWrite(leftForward,170);
+  analogWrite(leftBackward,0);
+  delay(200);
+  int rightSensor = analogRead(IRright);
+  int leftSensor = analogRead(IRleft);
+  int centerSensor = analogRead(IRcenter);
+  while( rightSensor < 200 ||  leftSensor < 200)
+  {
+    /*if (centerSensor < 200 )
+    {
+      if ( leftSensor > 200)
+        {
+             analogWrite(rightForward,190);
+             analogWrite(leftForward,50);
+        }
+      else
+        {
+             analogWrite(rightForward,50);
+             analogWrite(leftForward,170);
+        }
+    }
+    else 
+    {
+      if ( leftSensor > 200)
+        {
+             analogWrite(rightForward,170);
+             analogWrite(leftForward,90);
+        }
+      else
+        {
+             analogWrite(rightForward,90);
+             analogWrite(leftForward,150);
+        }
+    }*/
+      if (leftSensor > 200)
+        {
+            analogWrite(rightForward,150);
+            analogWrite(leftForward,0);
+        }
+        else if (rightSensor > 200)
+        {
+            analogWrite(rightForward,0);
+            analogWrite(leftForward,130);
+        }
+        else
+        {
+            analogWrite(rightForward,150);
+            analogWrite(leftForward,130);
+        }
+        
+           rightSensor = analogRead(IRright);
+           leftSensor = analogRead(IRleft);
+           centerSensor = analogRead(IRcenter);
+  
+  }
+  analogWrite(leftForward,0);
+  analogWrite(leftBackward,0);
+  analogWrite(rightForward,0);
+  analogWrite(rightBackward,0);
+}
+
+void RunLeftward()
+{
+  //run forward
+  analogWrite(rightForward,180);
+  analogWrite(rightBackward,0);
+  analogWrite(leftForward,0);
+  analogWrite(leftBackward,130);
+  delay(500);
+  int rightSensor = analogRead(IRright);
+  int leftSensor = analogRead(IRleft);
+  int centerSensor = analogRead(IRcenter);
+  bool forward = true;
+  
+  int degree = 68;
+  angleLeft = 0;
+  angleRight = 0;
+  while( (rightSensor < 200 /*||  leftSensor < 200*/ || centerSensor < 200) )
+  {
+      if (forward)
+      {
+        analogWrite(rightForward, 180);
+        analogWrite(leftBackward, 130);
+      }
+      else
+      {
+        analogWrite(rightForward, 120);
+        analogWrite(leftBackward, 170);
+        delay(50);
+      }
+        
+       rightSensor = analogRead(IRright);
+       leftSensor = analogRead(IRleft);
+       centerSensor = analogRead(IRcenter);
+
+       //Angles for both motors
+        //for Left Motor
+         ReadLeftRotary();
+        //for Right Motor
+        ReadRightRotary();
+
+       if (centerSensor <200)
+          forward = false;
+    
+  
+  }
+
+  while (angleRight <= degree && angleLeft <= degree )
+  {
+    
+    if (angleRight == angleLeft)
+    {
+       analogWrite(rightForward,180);
+       analogWrite(leftBackward,130);  
+    }
+    else if (angleRight>angleLeft)
+    { 
+       analogWrite(rightForward,180);
+       analogWrite(leftBackward,0);  
+    }
+    else if (angleLeft>angleRight)
+    {
+       analogWrite(rightForward,0);
+       analogWrite(leftBackward,130);
+    }
+    
+    analogWrite(leftBackward,0);  
+    analogWrite(rightForward,0);
+
+
+    //Angles for both motors
+    //for Left Motor
+     ReadLeftRotary();
+    //for Right Motor
+    ReadRightRotary();
+
+  }
+
+  analogWrite(leftForward,0);
+  analogWrite(leftBackward,0);
+  analogWrite(rightForward,0);
+  analogWrite(rightBackward,0);
+}
+
+
+void RunRightward()
+{
+  //run forward
+  analogWrite(rightForward,0);
+  analogWrite(rightBackward,130);
+  analogWrite(leftForward,170);
+  analogWrite(leftBackward,0);
+  delay(500);
+  int rightSensor = analogRead(IRright);
+  int leftSensor = analogRead(IRleft);
+  int centerSensor = analogRead(IRcenter);
+  bool forward = true;
+  
+  int degree = 68;
+  angleLeft = 0;
+  angleRight = 0;
+  while( (rightSensor < 200 /*||  leftSensor < 200*/ || centerSensor < 200) )
+  {
+      if (forward)
+      {
+        analogWrite(leftForward, 170);
+        analogWrite(rightBackward, 130);
+      }
+      else
+      {
+        analogWrite(leftForward, 110);
+        analogWrite(rightBackward, 170);
+        delay(50);
+      }
+        
+       rightSensor = analogRead(IRright);
+       leftSensor = analogRead(IRleft);
+       centerSensor = analogRead(IRcenter);
+
+       //Angles for both motors
+        //for Left Motor
+         ReadLeftRotary();
+        //for Right Motor
+        ReadRightRotary();
+
+       if (centerSensor <200)
+          forward = false;
+    
+  
+  }
+
+  while (angleRight <= degree && angleLeft <= degree )
+  {
+    
+    if (angleRight == angleLeft)
+    {
+       analogWrite(leftForward,170);
+       analogWrite(rightBackward,130);  
+    }
+    else if (angleRight>angleLeft)
+    { 
+       analogWrite(leftForward,170);
+       analogWrite(rightBackward,0);  
+    }
+    else if (angleLeft>angleRight)
+    {
+       analogWrite(leftForward,0);
+       analogWrite(rightBackward,130);
+    }
+    
+    analogWrite(leftBackward,0);  
+    analogWrite(rightForward,0);
+
+
+    //Angles for both motors
+    //for Left Motor
+     ReadLeftRotary();
+    //for Right Motor
+    ReadRightRotary();
+
+  }
+
+  analogWrite(leftForward,0);
+  analogWrite(leftBackward,0);
+  analogWrite(rightForward,0);
+  analogWrite(rightBackward,0);
 }
 
 
 void loop()
 {
     currentCell = nextCell(lastCell,dest);
-
+    Serial.println(lastCell);
+    Serial.println(currentCell);
+    Serial.println("Call move");
     Move( ( (currentCell & PAIRI)>>ShPAIRI) - ((lastCell & PAIRI)>>ShPAIRI),( (currentCell & PAIRJ)>>ShPAIRJ ) - ((lastCell & PAIRJ)>>ShPAIRJ));  
-    CreateGrid();
+    //CreateGrid();
+    Serial.println("move ended");
   
     if ( currentCell == uint8_t(UNBLOCKED|GVAl|PAIRI|PAIRJ ) )
        {
           //Print on app "destination not found"
+          Serial.println("not found");
        }
   
     if (currentCell == dest )
        {
           //Print on app "destination found"
+          Serial.println("found");
        }
 
     lastCell = currentCell ;     

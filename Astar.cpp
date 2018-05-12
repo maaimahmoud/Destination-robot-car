@@ -50,6 +50,13 @@ void addBlock (uint8_t i,uint8_t j)
 {
     grid[i][j] &= ~(1<<ShUNBLOCKED);
 }
+void initGrad()
+{
+    for (uint8_t i =0;i<COL;i++)
+        for (uint8_t j =0;j<COL;j++)
+            grid[i][j] = UNBLOCKED | GVAl | PAIRI | PAIRJ;
+}
+
 void removeAllBlocks ()
 {
     for (uint8_t i =0;i<COL;i++)
