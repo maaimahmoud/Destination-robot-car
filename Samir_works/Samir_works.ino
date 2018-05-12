@@ -432,7 +432,7 @@ void aStarSearch(uint8_t src, uint8_t dest)
 
 uint8_t currentCell,lastCell;
 uint8_t currentDegree = 0;
-uint8_t dest = 0b00100011;
+uint8_t dest = 0b01010011;
 
 
 int servo_angle = 0;
@@ -469,11 +469,11 @@ void setup() {
 
   currentCell = 0;
   
-  constractGrad();
+  //constractGrad();
   uint8_t src = 0;    //0,0
 
   Serial.println("Call aStar");
-  aStarSearch(src, dest);
+  //aStarSearch(src, dest);
   Serial.println("end aStar");
 
   lastCell = findedPath[0];
@@ -742,7 +742,7 @@ void RunForward()
     if (leftSensor > 200)
     {
       analogWrite(rightForward, 200);
-      analogWrite(leftForward, 60);
+      analogWrite(leftForward, 30);
     }
     else if (rightSensor > 200)
     {
@@ -818,7 +818,7 @@ void RunBackward()
 void RunLeftward()
 {
   //run forward
-  analogWrite(rightForward, 180);
+  analogWrite(rightForward, 170);
   analogWrite(rightBackward, 0);
   analogWrite(leftForward, 0);
   analogWrite(leftBackward, 130);
@@ -828,19 +828,19 @@ void RunLeftward()
   int centerSensor = analogRead(IRcenter);
   bool forward = true;
 
-  int degree = 80;
+  int degree = 75;
   angleLeft = 0;
   angleRight = 0;
-  while ( (/*rightSensor < 200 ||*/  leftSensor < 200 || centerSensor < 200) )
+  while ( (/*rightSensor < 200 ||*/  leftSensor < 200 || centerSensor < 200))
   {
     if (forward)
     {
-      analogWrite(rightForward, 180);
+      analogWrite(rightForward, 170);
       analogWrite(leftBackward, 130);
     }
     else
     {
-      analogWrite(rightForward, 120);
+      analogWrite(rightForward, 130);
       analogWrite(leftBackward, 170);
       delay(50);
     }
@@ -871,13 +871,13 @@ void RunLeftward()
     }
     else if (angleRight > angleLeft)
     {
-      analogWrite(rightForward, 0);
-      analogWrite(leftBackward, 170);
+      analogWrite(rightForward, 50);
+      analogWrite(leftBackward, 140 );
     }
     else if (angleLeft > angleRight)
     {
       analogWrite(rightForward, 180);
-      analogWrite(leftBackward, 0);
+      analogWrite(leftBackward, 50);
     }
 
     analogWrite(leftForward, 0);
@@ -1061,7 +1061,9 @@ void loop()
 //    RunRightward();
 //    RunForward();
 //    RunForward();
-  currentCell = nextCell(lastCell, dest);
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+  /*currentCell = nextCell(lastCell, dest);
 
     if ( currentCell == uint8_t(UNBLOCKED | GVAl | PAIRI | PAIRJ ) )
   {
@@ -1086,8 +1088,17 @@ void loop()
     delay(10000000000);
   }
 
-  lastCell = currentCell ;
+  lastCell = currentCell ;*/
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+RunForward();
+delay(500);
 
+RunForward();
+delay(500);
+
+//RunRightward();
+RunLeftward();
+delay(500);
   //  removeAllBlocks();
   //  uint8_t src = 0;    //0,0
   // uint8_t dests = 0b00000010; //0,2
