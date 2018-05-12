@@ -431,8 +431,8 @@ void aStarSearch(uint8_t src, uint8_t dest)
 }
 
 uint8_t currentCell,lastCell;
-uint8_t currentDegree = 1;
-uint8_t dest = 0b00110100;
+uint8_t currentDegree = 0;
+uint8_t dest = 0b00100011;
 
 
 int servo_angle = 0;
@@ -466,6 +466,8 @@ void setup() {
   pinMode(IRright, INPUT);
   pinMode(IRleft, INPUT);
   pinMode(IRcenter, INPUT);
+
+  currentCell = 0;
   
   constractGrad();
   uint8_t src = 0;    //0,0
@@ -485,8 +487,8 @@ void Updategrid(int x, int y)
   int mx = 0;
   int my = 0;
   // mapped read distance to required valuce according to mapped_grid_size (each cell indicate ? distance on real)
-  mx = (int(float(x) / maped_grid_size + 0.5)) + xpos;
-  my = (int(float(y) / maped_grid_size + 0.5)) + ypos;
+  mx = (int(float(x) / maped_grid_size + 0.5)) + xpos +  ((currentCell & PAIRI) >> ShPAIRI);
+  my = (int(float(y) / maped_grid_size + 0.5)) + ypos +  ((currentCell & PAIRJ) >> ShPAIRJ);
   Serial.println("x = ");
   Serial.println(mx);
   Serial.println("y = ");
@@ -533,8 +535,8 @@ bool Ultrasonicread(float& d, int mode)
 /*******************************************************************************************************************************/
 void Conversion(float d, int a, int& x, int& y)
 {
-  x = (d + 17) * cos(radians(a)) + 0;
-  y = (d + 16) * sin(radians(a)) + 4.5;
+  x = (d + 17) * cos(radians(a + currentDegree*90 )) + 0;
+  y = (d + 16) * sin(radians(a + currentDegree*90 )) + 4.5;
 }
 /*******************************************************************************************************************************/
 void setservoangle()
@@ -544,7 +546,7 @@ void setservoangle()
   if (servo_angle == 0 )
     delay(600);
   else
-    delay(100);
+    delay(200);
 }
 /*******************************************************************************************************************************/
 
@@ -593,7 +595,7 @@ void constractGrad() {
      // increment servo angle to check following places
     servo_angle += 5;
     delay(500); 
-    //  printing grid
+   //  printing grid
 
   }
   Serial.println("printing grid");
@@ -608,8 +610,64 @@ void constractGrad() {
 
   }
   delay(500);
-  // delay(100000000000000);
-//  myservo.detach();
+}
+
+void constractGrad2()
+{
+      servo_angle = 0;
+      // loop for 360 degree to get region's grid
+      while (servo_angle <= 180)
+      {
+        // note all of this functions works on only one ultrasonic
+        float distance = 0.0;
+        int x = 0;
+        int y = 0;
+        // change angle of servo in order to get data from ultrasonic
+        setservoangle();
+    
+        //Serial.println(servo_angle);
+        // get reading of ultrasonic and check if there exist obstacle or not +
+        bool obstacle = Ultrasonicread(distance, 1);
+        Serial.println("distance before = ");
+        Serial.println(distance);
+        // if there exit obstacle convert it to be mapped and updated in grid
+        if (obstacle)  {
+          Conversion(distance, servo_angle, x, y);
+          Serial.println("distance = ");
+          Serial.println(distance);
+          Serial.println("angle = ");
+          Serial.println(servo_angle);
+          Updategrid(x, y);
+        }
+         obstacle =Ultrasonicread(distance,2);
+          Serial.println(distance);
+          // if there exit obstacle convert it to be mapped and updated in grid
+          if (obstacle)
+           {
+            Conversion(distance,(servo_angle+180),x,y);
+            Serial.println("distance2 = ");
+                Serial.println(distance);
+                Serial.println("angle2 = ");
+                Serial.println(servo_angle);
+            Updategrid(x,y);
+          }
+         // increment servo angle to check following places
+        servo_angle += 90;
+        delay(500); 
+    
+      }
+      Serial.println("printing grid");
+      for (int i = 0; i < SIZE; i++)
+      {
+        Serial.println("next line");
+        for (int j = 0; j < SIZE; j++)
+        {
+          Serial.print (grid[i][j]);
+          Serial.print ("  ");
+        }
+    
+      }
+      delay(500);
 }
 
 // defines variables
@@ -710,7 +768,9 @@ void RunForward()
 
 void RunBackward()
 {
-  //run forward
+  angleRight=0;
+  angleLeft=0;
+
   analogWrite(rightForward, 0);
   analogWrite(rightBackward, 190);
   analogWrite(leftForward, 0);
@@ -721,22 +781,28 @@ void RunBackward()
   int centerSensor = analogRead(IRcenter);
   while ( rightSensor < 200 ||  leftSensor < 200  )
   {
-    //Serial.println("omar");
-    if (leftSensor > 200)
-    {
-      analogWrite(rightBackward, 190);
-      analogWrite(leftBackward, 0);
-    }
-    else if (rightSensor > 200)
-    {
-      analogWrite(rightBackward, 0);
-      analogWrite(leftBackward, 170);
-    }
-    else
-    {
-      analogWrite(rightBackward, 190);
-      analogWrite(leftBackward, 170);
-    }
+        if (angleRight == angleLeft)
+      {
+         analogWrite(leftBackward,carSpeed);
+         analogWrite(rightBackward,carSpeed);  
+      }
+      else if (angleRight>angleLeft)
+      { 
+         analogWrite(leftBackward,carSpeed);
+         analogWrite(rightBackward,0);  
+      }
+      else if (angleLeft>angleRight)
+      {
+         analogWrite(leftBackward,0);
+         analogWrite(rightBackward,carSpeed);  
+      }
+
+      
+    //Angles for both motors
+    //for Left Motor
+     ReadLeftRotary();
+    //for Right Motor
+    ReadRightRotary();
 
     rightSensor = analogRead(IRright);
     leftSensor = analogRead(IRleft);
@@ -925,51 +991,65 @@ void Move( int8_t deltaX, int8_t deltaY )
   Serial.println(deltaX);
   Serial.println(deltaY);
   int8_t degree;
-  if (deltaX == 1)
+  if (deltaY == 1)
     degree =0;
-  else if (deltaX == -1)
+  else if (deltaY == -1)
      degree =2;
 
-  if (deltaY == 1)
-    degree =1;
-  else if (deltaY == -1)
-     degree =3;
+  if (deltaX == 1)
+    degree =3;
+  else if (deltaX == -1)
+     degree =2;
 
      
   int8_t difference = degree - currentDegree;
   
-  if (abs(difference) == 2 )
+  /*if (abs(difference) == 2 )
   {  
      //right
      //right
      Serial.println("start run right right");
-     RunRightward();
-     RunRightward();
+     //RunRightward();
+     //RunRightward();
      Serial.println("run right right");
+     RunBackward();
   }
-  else if ( difference == 1 || difference == -3)
+  else */
   {
-//      //left
-      Serial.println("run left");
-      RunLeftward();
-      Serial.println("run left");
-   }
-  else if ( difference == -1 || difference == 3)
-  {   
-    //right
-    Serial.println("run right");
-    RunRightward();
-    Serial.println("run right");
+      if (abs(difference) == 2 )
+      {  
+         //right
+         //right
+         Serial.println("start run right right");
+         RunRightward();
+         RunRightward();
+         Serial.println("run right right");
+      }
+      
+      if ( difference == 1 || difference == -3)
+    {
+  //      //left
+        Serial.println("run left");
+        RunLeftward();
+        Serial.println("run left");
+     }
+    else if ( difference == -1 || difference == 3)
+    {   
+      //right
+      Serial.println("run right");
+      RunRightward();
+      Serial.println("run right");
+      
+    }   
     
-  }   
-  
-  //forward
-  Serial.flush();
-  Serial.println("run forward");
-  RunForward();
-  Serial.println("run forward");
-  Serial.flush();
-  currentDegree = degree;    
+    //forward
+    Serial.flush();
+    Serial.println("run forward");
+    RunForward();
+    Serial.println("run forward");
+    Serial.flush();
+    currentDegree = degree;  
+  }  
 
 }
 
@@ -996,7 +1076,7 @@ void loop()
   Serial.println(currentCell);
   Serial.println("Call move");
   Move( ( (currentCell & PAIRI) >> ShPAIRI) - ((lastCell & PAIRI) >> ShPAIRI), ( (currentCell & PAIRJ) >> ShPAIRJ ) - ((lastCell & PAIRJ) >> ShPAIRJ));
-  //CreateGrid();
+  constractGrad2();
   Serial.println("move ended");
 
   if (currentCell == dest )
