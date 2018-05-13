@@ -429,10 +429,49 @@ void aStarSearch(uint8_t src, uint8_t dest)
 
   return;
 }
-
 uint8_t currentCell,lastCell;
 uint8_t currentDegree = 0;
-uint8_t dest = 0b01010011;
+uint8_t dest = 0;
+void BluetoothConf (){
+  char dataIn = 'r';            //Variable for storing received data
+  bool sended=true;
+  bool recieve_destination=true;
+  int destination=0;
+  int xdest=0;
+  int ydest=0;
+
+  while (dataIn!='c'){
+  if(Serial.available() > 0)      // Send data only when you receive data:
+  {
+      dataIn = Serial.read();        //Read the incoming data & store into data
+      Serial.println(dataIn);}
+  }
+  Serial.println("finsh");
+  // cofirum that connection is right
+  while(sended){
+   if(Serial.available() > 0)      // Send data only when you receive data:
+   {
+       Serial.write('s');        //Read the incoming data & store into data
+       Serial.println("s sent ");
+       sended=false;
+       }       
+  }    
+
+  while(recieve_destination)
+  {
+     if(Serial.available() > 0)      // Send data only when you receive data:
+  {
+      destination = Serial.read();        //Read the incoming data & store into data
+      Serial.println(destination);
+      ydest=(destination/15);
+      xdest=(destination%15);
+      Serial.println(xdest);
+      Serial.println(ydest);
+      recieve_destination=false;}
+         
+  }
+  dest = (xdest << ShPAIRI) | (ydest << ShPAIRJ);
+}
 
 
 int servo_angle = 0;
@@ -479,6 +518,7 @@ void setup() {
   lastCell = findedPath[0];
   Serial.println("last cell equal ");
   Serial.println(lastCell);
+  BluetoothConf();
 
 }
 /*******************************************************************************************************************************/
