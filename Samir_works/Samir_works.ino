@@ -429,9 +429,11 @@ void aStarSearch(uint8_t src, uint8_t dest)
 
   return;
 }
+
 uint8_t currentCell,lastCell;
 uint8_t currentDegree = 0;
-uint8_t dest = 0;
+uint8_t dest = 0b00100011;
+
 void BluetoothConf (){
   char dataIn = 'r';            //Variable for storing received data
   bool sended=true;
@@ -472,8 +474,6 @@ void BluetoothConf (){
   }
   dest = (xdest << ShPAIRI) | (ydest << ShPAIRJ);
 }
-
-
 int servo_angle = 0;
 Servo myservo;
 // setting name of pins in order to use it easily in code//
@@ -492,7 +492,7 @@ void setup() {
   // initillize grid as if there doesn't exist any obstacles
   initGrad();
   Serial.begin(9600);
-
+  BluetoothConf ();
   pinMode(leftForward, OUTPUT);
   pinMode(leftBackward, OUTPUT);
   pinMode(rightForward, OUTPUT);
@@ -508,18 +508,16 @@ void setup() {
 
   currentCell = 0;
   
-  //constractGrad();
+  constractGrad();
   uint8_t src = 0;    //0,0
 
   Serial.println("Call aStar");
-  //aStarSearch(src, dest);
+  aStarSearch(src, dest);
   Serial.println("end aStar");
 
   lastCell = findedPath[0];
   Serial.println("last cell equal ");
   Serial.println(lastCell);
-  BluetoothConf();
-
 }
 /*******************************************************************************************************************************/
 void Updategrid(int x, int y)
@@ -738,7 +736,6 @@ void ReadRightRotary()
   if (currentStateRight != prevStateRight)
     angleRight = (angleRight + 9);
 }
-
 
 void RunForward()
 {
@@ -1049,8 +1046,6 @@ void Move( int8_t deltaX, int8_t deltaY )
      //right
      //right
      Serial.println("start run right right");
-     //RunRightward();
-     //RunRightward();
      Serial.println("run right right");
      RunBackward();
   }
@@ -1101,9 +1096,7 @@ void loop()
 //    RunRightward();
 //    RunForward();
 //    RunForward();
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
-  /*currentCell = nextCell(lastCell, dest);
+  currentCell = nextCell(lastCell, dest);
 
     if ( currentCell == uint8_t(UNBLOCKED | GVAl | PAIRI | PAIRJ ) )
   {
@@ -1128,17 +1121,8 @@ void loop()
     delay(10000000000);
   }
 
-  lastCell = currentCell ;*/
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-RunForward();
-delay(500);
+  lastCell = currentCell ;
 
-RunForward();
-delay(500);
-
-//RunRightward();
-RunLeftward();
-delay(500);
   //  removeAllBlocks();
   //  uint8_t src = 0;    //0,0
   // uint8_t dests = 0b00000010; //0,2
