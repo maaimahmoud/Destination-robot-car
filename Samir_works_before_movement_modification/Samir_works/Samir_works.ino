@@ -518,7 +518,7 @@ void setup() {
        EEPROM.write(0, 0);
        EEPROM.write(1, 0);    
        EEPROM.write(2, 0);
-      dest = 0b00100000;
+      dest = 0b00000001;
   }
   else
   {
@@ -801,7 +801,7 @@ void RunForward()
     if (leftSensor > 200)
     {
       analogWrite(rightForward, 200);
-      analogWrite(leftForward, 30);
+      analogWrite(leftForward, 60);
     }
     else if (rightSensor > 200)
     {
@@ -887,19 +887,19 @@ void RunLeftward()
   int centerSensor = analogRead(IRcenter);
   bool forward = true;
 
-  int degree = 75;
+  int degree = 80;
   angleLeft = 0;
   angleRight = 0;
   while ( (/*rightSensor < 200 ||*/  leftSensor < 200 || centerSensor < 200))
   {
     if (forward)
     {
-      analogWrite(rightForward, 170);
+      analogWrite(rightForward, 180);
       analogWrite(leftBackward, 130);
     }
     else
     {
-      analogWrite(rightForward, 130);
+      analogWrite(rightForward, 120);
       analogWrite(leftBackward, 170);
       delay(50);
     }
@@ -930,13 +930,13 @@ void RunLeftward()
     }
     else if (angleRight > angleLeft)
     {
-      analogWrite(rightForward, 50);
-      analogWrite(leftBackward, 140 );
+      analogWrite(rightForward, 0);
+      analogWrite(leftBackward, 170 );
     }
     else if (angleLeft > angleRight)
     {
       analogWrite(rightForward, 180);
-      analogWrite(leftBackward, 50);
+      analogWrite(leftBackward, 0);
     }
 
     analogWrite(leftForward, 0);
@@ -1138,7 +1138,7 @@ void loop()
   if ( currentCell == uint8_t(UNBLOCKED | GVAl | PAIRI | PAIRJ ) )
   {
     //Print on app "destination not found"
-    Serial.println("not found");
+    //Serial.println("not found");
     analogWrite(A5,255);
     delay(10000000000);
   }
@@ -1157,7 +1157,7 @@ void loop()
   {
     //Print on app "destination found"
 //    Serial.println("found");
-    analogWrite(A4,255); 
+     analogWrite(A4,255);
     delay(10000000000);
   }
 
